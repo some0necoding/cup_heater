@@ -74,7 +74,7 @@ void updateCupPresence()
   cupPresent = force > 0;
 }
 
-void showCurrentState()
+void displayInfo()
 {
   display.clearDisplay();
 
@@ -88,8 +88,6 @@ void showCurrentState()
   display.write(0xF8);
   display.println("C");
 
-  // for (int i = 0; i < 7; i++) display.write(0xC4);
-  // display.println();
   display.drawFastHLine(0, 40, 150, 1);
 
   display.setCursor(16, 47);
@@ -122,6 +120,6 @@ void loop() {
   updateCupPresence();
   currentTemp();
   activateRelay();
-  showCurrentState();
+  displayInfo();
   delay(500);
 }

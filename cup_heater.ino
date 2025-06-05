@@ -4,7 +4,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-#define TARGET_TEMP_C 30
+#define TARGET_TEMP_C 40
 #define DELTA_TEMP_C 2
 
 /*****************************************************************************/
@@ -78,21 +78,25 @@ void showCurrentState()
 {
   display.clearDisplay();
 
-  display.setCursor(0, 0);
+  display.setCursor(0, 8);
   display.setTextColor(1);
-  display.setTextSize(1);
+  display.setTextSize(3);
   display.setTextWrap(true);
-
-  const int target = (cupPresent) ? TARGET_TEMP_C : 0;
-  display.print("Target temp: ");
-  display.print(target);
   display.cp437(true);
+
+  display.print(currTemp);
   display.write(0xF8);
   display.println("C");
 
-  display.print("Current temp: ");
-  display.print(currTemp);
-  display.cp437(true);
+  // for (int i = 0; i < 7; i++) display.write(0xC4);
+  // display.println();
+  display.drawFastHLine(0, 40, 150, 1);
+
+  display.setCursor(16, 47);
+  display.setTextSize(2);
+  const int target = (cupPresent) ? TARGET_TEMP_C : 0;
+  display.print("Tgt: ");
+  display.print(target);
   display.write(0xF8);
   display.println("C");
 

@@ -4,7 +4,8 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-#define TARGET_TEMP_C 30
+#define TARGET_TEMP_C 40
+#define DELTA_TEMP_C 2
 
 /*****************************************************************************/
 /*************************** FSR Sensor Variables ****************************/
@@ -33,11 +34,19 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define REFERENCE_RESISTANCE    10000
 #define NOMINAL_RESISTANCE      20000
 #define NOMINAL_TEMPERATURE     25
-#define B_VALUE                 3900 // old 3950
+#define B_VALUE                 3900
 #define ESP32_ANALOG_RESOLUTION 4095
 #define ESP32_ADC_VREF_MV       3300
 
-Thermistor* thermistor;
+Thermistor* thermistor = new NTC_Thermistor_ESP32(
+  SENSOR_PIN,
+  REFERENCE_RESISTANCE,
+  NOMINAL_RESISTANCE,
+  NOMINAL_TEMPERATURE,
+  B_VALUE,
+  ESP32_ADC_VREF_MV,
+  ESP32_ANALOG_RESOLUTION
+);
 
 double currTemp = 0;
 
@@ -47,22 +56,11 @@ double currTemp = 0;
 
 #define RELAY_PIN 12
 
-// the setup function runs once when you press reset or power the board
 void setup() {
   Serial.begin(115200);
 
   pinMode(FSR_PIN, INPUT);
   pinMode(RELAY_PIN, OUTPUT);
-
-  thermistor = new NTC_Thermistor_ESP32(
-    SENSOR_PIN,
-    REFERENCE_RESISTANCE,
-    NOMINAL_RESISTANCE,
-    NOMINAL_TEMPERATURE,
-    B_VALUE,
-    ESP32_ADC_VREF_MV,
-    ESP32_ANALOG_RESOLUTION
-  );
 
   if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
     Serial.println(F("SSD1306 allocation failed"));
@@ -80,21 +78,25 @@ void showCurrentState()
 {
   display.clearDisplay();
 
-  display.setCursor(0, 0);
+  display.setCursor(0, 8);
   display.setTextColor(1);
-  display.setTextSize(1);
+  display.setTextSize(3);
   display.setTextWrap(true);
-
-  const int target = (cupPresent) ? TARGET_TEMP_C : 0;
-  display.print("Target temp: ");
-  display.print(target);
   display.cp437(true);
+
+  display.print(currTemp);
   display.write(0xF8);
   display.println("C");
 
-  display.print("Current temp: ");
-  display.print(currTemp);
-  display.cp437(true);
+  // for (int i = 0; i < 7; i++) display.write(0xC4);
+  // display.println();
+  display.drawFastHLine(0, 40, 150, 1);
+
+  display.setCursor(16, 47);
+  display.setTextSize(2);
+  const int target = (cupPresent) ? TARGET_TEMP_C : 0;
+  display.print("Tgt: ");
+  display.print(target);
   display.write(0xF8);
   display.println("C");
 
@@ -104,11 +106,8 @@ void showCurrentState()
 void activateRelay()
 {
   if (cupPresent) {
-    if (currTemp < TARGET_TEMP_C) {
-      digitalWrite(RELAY_PIN, HIGH);
-    } else {
-      digitalWrite(RELAY_PIN, LOW);
-    }
+    if (currTemp <= TARGET_TEMP_C - (DELTA_TEMP_C / 2.0)) digitalWrite(RELAY_PIN, HIGH);
+    if (currTemp >= TARGET_TEMP_C + (DELTA_TEMP_C / 2.0)) digitalWrite(RELAY_PIN, LOW);
   } else {
     digitalWrite(RELAY_PIN, LOW);
   }
